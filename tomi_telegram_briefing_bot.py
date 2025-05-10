@@ -2,12 +2,12 @@
 import os
 import requests
 from datetime import datetime
+from flask import Flask
 
-# === 사용자 맞춤 정보 입력 ===
-BOT_TOKEN = "여기에_당신의_Telegram_Bot_Token"
-CHAT_ID = "여기에_당신의_Chat_ID"
+# 텔레그램 설정
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
 
-# === 메시지 생성 ===
 def generate_btc_briefing():
     now = datetime.now().strftime("%Y-%m-%d %H:%M")
     message = f"""
@@ -19,22 +19,26 @@ def generate_btc_briefing():
 ✔️ 진입 제안: $102,600 롱 / 목표 $104,000
 ✔️ 손절 제안: $101,900
 
-💡 참고: 기술적 지표 및 맥스웰 기반 예측.
-Have a profitable day!
+💡 Have a profitable day!
 """
     return message
 
-# === 텔레그램 전송 함수 ===
-def send_telegram_message(message):
+def send_telegram_message(msg):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    payload = {
-        "chat_id": CHAT_ID,
-        "text": message
-    }
-    response = requests.post(url, data=payload)
-    return response
+    payload = {"chat_id": CHAT_ID, "text": msg}
+    return requests.post(url, data=payload)
 
-# === 실행 ===
+# ▶ 웹 서버 구성 (포트 열기용)
+app = Flask(__name__)
+
+@app.route("/")
+def index():
+    msg = generate_btc_briefing()
+    res = send_telegram_message(msg)
+    return f"✅ 브리핑 전송됨! Telegram 응답 코드: {res.status_code}"
+
+# ▶ Render에서 요구하는 포트를 열기 위한 코드
 if __name__ == "__main__":
-    briefing = generate_btc_briefing()
-    send_telegram_message(briefing)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
+
